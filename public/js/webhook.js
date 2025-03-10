@@ -1,40 +1,84 @@
 const { hostname, pathname, port } = window.location;
-const wsUri = `ws://${hostname}:${port}${pathname}`;
-const websocket = new WebSocket(wsUri);
 
-function sendMessage(message) {
-  websocket.send(message);
+// Construct WebSocket URI
+const wsUri = `ws://${hostname}:${port}${pathname}`;
+let websocket;
+
+// Initialize WebSocket connection
+function initializeWebSocket() {
+  try {
+    websocket = new WebSocket(wsUri);
+
+    websocket.onopen = handleWebSocketOpen;
+    websocket.onclose = handleWebSocketClose;
+    websocket.onmessage = handleWebSocketMessage;
+    websocket.onerror = handleWebSocketError;
+  } catch (error) {
+    console.error("Failed to initialize WebSocket:", error);
+  }
 }
 
-websocket.onopen = (e) => {
+// Handle WebSocket open event
+function handleWebSocketOpen(event) {
+  console.log("WebSocket connection established.");
   sendMessage("ping");
-  //   pingInterval = setInterval(() => {
-  //     sendMessage("ping");
-  //   }, 1000);
-};
 
-websocket.onclose = (e) => {
+  // Uncomment to enable periodic ping
+  // pingInterval = setInterval(() => sendMessage("ping"), 1000);
+}
+
+// Handle WebSocket close event
+function handleWebSocketClose(event) {
+  console.log("WebSocket connection closed.");
   // clearInterval(pingInterval);
-};
+}
 
-websocket.onmessage = (e) => {
-  console.log(e);
-  
-  const { event, data } = JSON.parse(e.data);
+// Handle WebSocket message event
+function handleWebSocketMessage(event) {
+  try {
+    const message = JSON.parse(event.data);
+    const { event: eventType, data } = message;
 
-  switch (event) {
-    case "requestData":
-      const requests =
-        JSON.parse(window.localStorage.getItem("requests")) ?? [];
-      requests.push(data);
-      window.localStorage.setItem("requests", JSON.stringify(requests));
-      window.location.reload()
-      break;
-    default:
-      break;
+    switch (eventType) {
+      case "requestData":
+        handleRequestData(data);
+        break;
+      default:
+        console.warn("Unknown event type received:", eventType);
+        break;
+    }
+  } catch (error) {
+    console.error("Failed to parse WebSocket message:", error);
   }
-};
+}
 
-websocket.onerror = (e) => {
-  console.log(e);
-};
+// Handle WebSocket error event
+function handleWebSocketError(event) {
+  console.error("WebSocket error:", event);
+}
+
+// Send a message over the WebSocket
+function sendMessage(message) {
+  if (websocket && websocket.readyState === WebSocket.OPEN) {
+    websocket.send(message);
+  } else {
+    console.warn("WebSocket is not open. Message not sent:", message);
+  }
+}
+
+// Handle incoming request data
+function handleRequestData(data) {
+  try {
+    const requests = JSON.parse(window.localStorage.getItem("requests")) || [];
+    requests.push(data);
+    window.localStorage.setItem("requests", JSON.stringify(requests));
+
+    // Reload the page to reflect changes
+    window.location.reload();
+  } catch (error) {
+    console.error("Failed to handle request data:", error);
+  }
+}
+
+// Initialize WebSocket connection when the script loads
+initializeWebSocket();

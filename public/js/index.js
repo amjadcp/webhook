@@ -1,79 +1,56 @@
 // Array to hold all logged requests
-let requests = JSON.parse(window.localStorage.getItem("requests")) ?? [];
+let requests = JSON.parse(window.localStorage.getItem("requests")) || [];
 let selectedRequest = null;
-// let requests = [
-//   {
-//     url: "/9aa57324-a50a-4f0d-aca5-0f84b83c0f2b",
-//     method: "POST",
-//     headers: {
-//       host: "localhost:3000",
-//       "user-agent": "curl/7.81.0",
-//       accept: "*/*",
-//       "content-type": "application/json",
-//       "content-length": "22",
-//     },
-//     body: {
-//       name: "Hello.....",
-//     },
-//   },
-//   {
-//     url: "/9aa57324-a50a-4f0d-aca5-0f84b83c0f2b",
-//     method: "GET",
-//     headers: {
-//       host: "localhost:3000",
-//       "user-agent": "curl/7.81.0",
-//       accept: "*/*",
-//       "content-type": "application/json",
-//       "content-length": "22",
-//     },
-//     body: {
-//       name: "Hello.....",
-//     },
-//   },
-// ];
+
 /**
  * Logs a new request and updates the request history sidebar.
  * @param {Object[]} requests - The request data.
- * Each entry includes a delete button to remove the request.
  */
 function logRequest(requests) {
   const historyList = document.getElementById("history-list");
   historyList.innerHTML = "";
-  // Loop over requests and create an entry for each
+
   requests.forEach((requestData, index) => {
-    const entry = document.createElement("div");
-    entry.className = "log-entry";
-
-    // Label for the request
-    const label = document.createElement("span");
-    label.textContent = `Request ${index + 1}: ${requestData.method} ${
-      requestData.url
-    }`;
-    entry.appendChild(label);
-
-    // Delete button for this request
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "delete-btn";
-    deleteBtn.textContent = "Delete";
-    deleteBtn.addEventListener("click", (e) => {
-      e.stopPropagation(); // Prevent triggering the entry's click event
-      if (confirm("Are you sure you want to delete this request?")) {
-        deleteRequest(index)
-      }
-    });
-
-    entry.appendChild(deleteBtn);
-    // Click event to show details of this request
-    entry.addEventListener("click", () => {
-      showDetails(requestData);
-    });
-
-    // Prepend so that the latest requests appear at the top
+    const entry = createRequestEntry(requestData, index);
     historyList.prepend(entry);
   });
 
-  // Display the first logged request by default.
-  showDetails(requests.slice(-1)[0]);
+  // Display the latest request by default
+  if (requests.length > 0) {
+    showDetails(requests[requests.length - 1]);
+  }
+}
+
+/**
+ * Creates a request entry element.
+ * @param {Object} requestData - The request data.
+ * @param {number} index - The index of the request.
+ * @returns {HTMLElement} - The created entry element.
+ */
+function createRequestEntry(requestData, index) {
+  const entry = document.createElement("div");
+  entry.className = "log-entry";
+
+  const label = document.createElement("span");
+  label.textContent = `Request ${index + 1}: ${requestData.method} ${requestData.url}`;
+  entry.appendChild(label);
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "delete-btn";
+  deleteBtn.textContent = "Delete";
+  deleteBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (confirm("Are you sure you want to delete this request?")) {
+      deleteRequest(index);
+    }
+  });
+
+  entry.appendChild(deleteBtn);
+  entry.addEventListener("click", () => {
+    showDetails(requestData);
+  });
+
+  return entry;
 }
 
 /**
@@ -81,17 +58,27 @@ function logRequest(requests) {
  * @param {Object} requestData - The selected request.
  */
 function showDetails(requestData) {
-  selectedRequest = requestData
-  // Update Raw JSON section
-  document.getElementById("raw-json-display").textContent = JSON.stringify(
-    requestData,
-    null,
-    2
-  );
+  selectedRequest = requestData;
 
-  // Update Table View section
+  updateRawJsonDisplay(requestData);
+  updateTableView(requestData);
+}
+
+/**
+ * Updates the Raw JSON section.
+ * @param {Object} requestData - The request data to display.
+ */
+function updateRawJsonDisplay(requestData) {
+  document.getElementById("raw-json-display").textContent = JSON.stringify(requestData, null, 2);
+}
+
+/**
+ * Updates the Table View section.
+ * @param {Object} requestData - The request data to display.
+ */
+function updateTableView(requestData) {
   const tbody = document.getElementById("json-table-body");
-  tbody.innerHTML = ""; // Clear previous content
+  tbody.innerHTML = "";
 
   for (const key in requestData) {
     if (requestData.hasOwnProperty(key)) {
@@ -100,7 +87,6 @@ function showDetails(requestData) {
       cellKey.textContent = key;
       const cellValue = document.createElement("td");
       let value = requestData[key];
-      // Convert object values to string
       if (typeof value === "object") {
         value = JSON.stringify(value);
       }
@@ -113,33 +99,40 @@ function showDetails(requestData) {
 }
 
 /**
- * Delete the request form the history
- * Clears the Raw JSON and Table View sections.
+ * Deletes a request from the history.
+ * @param {number|null} requestIndex - The index of the request to delete, or null to delete all.
  */
-const deleteRequest = (requestIndex=null) => {
-  // delete all requests
-  if(requestIndex===null){
-    requests = []
-  }else{ // delete particular requestData
+function deleteRequest(requestIndex = null) {
+  if (requestIndex === null) {
+    requests = [];
+  } else {
     requests.splice(requestIndex, 1);
   }
 
-  // clear the details
+  clearDetails();
+  saveRequestsToLocalStorage();
+  logRequest(requests);
+}
+
+/**
+ * Clears the Raw JSON and Table View sections.
+ */
+function clearDetails() {
   document.getElementById("raw-json-display").textContent = "";
   document.getElementById("json-table-body").innerHTML = "";
   selectedRequest = null;
+}
 
-  // update the local storage
-  window.localStorage.setItem("requests", JSON.stringify(requests));
-
-  logRequest(requests);
-};
-
-
-// Simulate logging a POST request after a short delay
-setTimeout(() => {
-  logRequest(requests);
-}, 1000);
+/**
+ * Saves the requests array to localStorage.
+ */
+function saveRequestsToLocalStorage() {
+  try {
+    window.localStorage.setItem("requests", JSON.stringify(requests));
+  } catch (error) {
+    console.error("Failed to save requests to localStorage:", error);
+  }
+}
 
 // Delete All functionality for the history
 const deleteAllBtn = document.getElementById("delete-all-btn");
@@ -148,3 +141,8 @@ deleteAllBtn.addEventListener("click", () => {
     deleteRequest();
   }
 });
+
+// Simulate logging a POST request after a short delay
+setTimeout(() => {
+  logRequest(requests);
+}, 1000);
