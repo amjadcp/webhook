@@ -1,0 +1,75 @@
+ /* Global reset and base styles */
+ * {
+   margin: 0;
+   padding: 0;
+   box-sizing: border-box;
+ }
+ body, html {
+   height: 100%;
+   font-family: Arial, sans-serif;
+ }
+ /* Main container as flex layout */
+ .container {
+   display: flex;
+   height: 100vh;
+ }
+ /* Sidebar for Request History */
+ .sidebar {
+   width: 250px;
+   background: #2c3e50;
+   color: #ecf0f1;
+   padding: 20px;
+   overflow-y: auto;
+ }
+ .sidebar h2 {
+   margin-bottom: 10px;
+   font-size: 1.2em;
+ }
+ .history-list .log-entry {
+   padding: 10px;
+   margin-bottom: 10px;
+   background: #34495e;
+   border-radius: 4px;
+   cursor: pointer;
+ }
+ .history-list .log-entry:hover {
+   background: #3a5d75;
+ }
+ /* Content area (right side) with two sections */
+ .content {
+   flex: 1;
+   display: grid;
+   grid-template-rows: 1fr 1fr;
+   gap: 10px;
+   padding: 20px;
+   background: #f5f5f5;
+ }
+ .section {
+   background: #fff;
+   padding: 10px;
+   border: 1px solid #ddd;
+   border-radius: 4px;
+   overflow: auto;
+ }
+ .section h3 {
+   margin-bottom: 10px;
+ }
+ pre {
+   background: #f9f9f9;
+   padding: 10px;
+   border-radius: 4px;
+   white-space: pre-wrap;
+   word-wrap: break-word;
+ }
+ table {
+   width: 100%;
+   border-collapse: collapse;
+ }
+ table th, table td {
+   padding: 8px;
+   border: 1px solid #ddd;
+   text-align: left;
+ }
+ table th {
+   background: #f9f9f9;
+ }

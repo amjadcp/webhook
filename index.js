@@ -1,9 +1,12 @@
 const express = require("express");
 const http = require("http");
 const crypto = require("crypto");
-const { createWebSocketFrame, parseWebSocketFrame } = require("./utils/socket.util");
+const path = require("path");
+const {
+  createWebSocketFrame,
+  parseWebSocketFrame,
+} = require("./utils/socket.util");
 const { log } = require("console");
-const { decode } = require("querystring");
 
 const app = express();
 app.set("view engine", "ejs");
@@ -13,22 +16,49 @@ const clients = new Map();
 app.use(
   express.json({
     type: ["application/json", "text/plain"],
-  }),
+  })
 );
 app.use(express.urlencoded({ extended: true }));
+app.use("/static", express.static(path.join(__dirname, "public")));
+
+app.get("/", (req, res) => {
+  const id = crypto.randomUUID()
+  return res.redirect(`/${id}`);
+  // return res.render("index", { wsUri: "ws://" + req.get("host") + req.originalUrl });
+});
 
 app.get("/:id", (req, res) => {
-  log(req.protocol + "://" + req.get("host") + req.originalUrl);
-  res.render("index", { wsUri: "ws://" + req.get("host") + req.originalUrl });
+  return res.render("index", {
+    wsUri: "ws://" + req.get("host") + req.originalUrl,
+  });
 });
 
 app.post("/:id", (req, res) => {
   const id = req.params.id;
   const socket = clients.get(id);
-  const message = JSON.stringify(req.body);
+  const data = {
+    url: req.originalUrl,
+    method: req.method,
+    headers: req.headers,
+    body: req.body,
+  };
+  const message = JSON.stringify({
+    data: data,
+    event: "requestData",
+  });
   const frame = createWebSocketFrame(message);
 
-  if (socket) socket.write(frame);
+  console.log({
+    url: req.originalUrl,
+    method: req.method,
+    headers: req.headers,
+    body: req.body,
+  });
+
+  if (socket) {
+    socket.write(frame);
+  }
+
   res.status(200).json({ data: null });
 });
 
@@ -54,7 +84,7 @@ server.on("upgrade", (req, socket, head) => {
     "HTTP/1.1 101 Switching Protocols\r\n" +
       "Upgrade: websocket\r\n" +
       "Connection: Upgrade\r\n" +
-      `Sec-WebSocket-Accept: ${acceptKey}\r\n\r\n`,
+      `Sec-WebSocket-Accept: ${acceptKey}\r\n\r\n`
   );
 
   // Store WebSocket connection
@@ -62,11 +92,10 @@ server.on("upgrade", (req, socket, head) => {
 
   // Handle WebSocket messages
   socket.on("data", (data) => {
-    const message = parseWebSocketFrame(data)
+    const message = parseWebSocketFrame(data);
     console.log("Received:", message);
     // Send response using proper WebSocket framing
     const response = createWebSocketFrame(`You said: ${message}`);
-    log(response)
     socket.write(response);
   });
 
