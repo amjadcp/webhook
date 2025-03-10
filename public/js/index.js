@@ -1,5 +1,42 @@
+// Webhook URL constant
+var { hostname, pathname, port, protocol } = window.location;
+const webhookURL = `${protocol}//${hostname}${
+  port ? ":" + port : ""
+}${pathname}`;
+
 // Array to hold all logged requests
 let requests = JSON.parse(window.localStorage.getItem("requests")) || [];
+// let requests = [
+//   {
+//     "url": "/a08ef9df-d84b-4fae-be84-9d4ef6ae0d58",
+//     "method": "POST",
+//     "headers": {
+//       "host": "localhost:3000",
+//       "user-agent": "curl/7.81.0",
+//       "accept": "*/*",
+//       "content-type": "application/json",
+//       "content-length": "26"
+//     },
+//     "body": {
+//       "name": "Hello.....\\\\"
+//     }
+//   },
+//   {
+//     "url": "/a08ef9df-d84b-4fae-be84-9d4ef6ae0d58",
+//     "method": "POST",
+//     "headers": {
+//       "host": "localhost:3000",
+//       "user-agent": "curl/7.81.0",
+//       "accept": "*/*",
+//       "content-type": "application/json",
+//       "content-length": "22"
+//     },
+//     "body": {
+//       "name": "Hello....."
+//     }
+//   }
+// ]
+
 let selectedRequest = null;
 
 /**
@@ -31,21 +68,38 @@ function createRequestEntry(requestData, index) {
   const entry = document.createElement("div");
   entry.className = "log-entry";
 
-  const label = document.createElement("span");
-  label.textContent = `Request ${index + 1}: ${requestData.method} ${requestData.url}`;
-  entry.appendChild(label);
+  // Container for method label and request info
+  const infoContainer = document.createElement("div");
+  infoContainer.className = "entry-info";
 
+  // Create request info text
+  const textSpan = document.createElement("span");
+  textSpan.textContent = ` # ${index+1}: ${requestData.url}`;
+  infoContainer.appendChild(textSpan);
+
+  // Create colored method label based on HTTP method
+  const methodLabel = document.createElement("span");
+  methodLabel.className =
+    "method-label method-" + requestData.method.toUpperCase();
+  methodLabel.textContent = requestData.method.toUpperCase();
+  infoContainer.appendChild(methodLabel);
+
+  entry.appendChild(infoContainer);
+
+  // Individual delete button with basket (trash can) icon
   const deleteBtn = document.createElement("button");
   deleteBtn.className = "delete-btn";
-  deleteBtn.textContent = "Delete";
+  deleteBtn.innerHTML = "&#128465;"; // Trash can icon
+  deleteBtn.title = "Delete";
   deleteBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     if (confirm("Are you sure you want to delete this request?")) {
       deleteRequest(index);
     }
   });
-
   entry.appendChild(deleteBtn);
+
+  // Click event to show details of this request
   entry.addEventListener("click", () => {
     showDetails(requestData);
   });
@@ -59,7 +113,6 @@ function createRequestEntry(requestData, index) {
  */
 function showDetails(requestData) {
   selectedRequest = requestData;
-
   updateRawJsonDisplay(requestData);
   updateTableView(requestData);
 }
@@ -69,7 +122,11 @@ function showDetails(requestData) {
  * @param {Object} requestData - The request data to display.
  */
 function updateRawJsonDisplay(requestData) {
-  document.getElementById("raw-json-display").textContent = JSON.stringify(requestData, null, 2);
+  document.getElementById("raw-json-display").textContent = JSON.stringify(
+    requestData,
+    null,
+    2
+  );
 }
 
 /**
@@ -108,7 +165,6 @@ function deleteRequest(requestIndex = null) {
   } else {
     requests.splice(requestIndex, 1);
   }
-
   clearDetails();
   saveRequestsToLocalStorage();
   logRequest(requests);
@@ -141,6 +197,21 @@ deleteAllBtn.addEventListener("click", () => {
     deleteRequest();
   }
 });
+
+// Copy Webhook URL functionality (assumes a copy button with ID "copy-webhook-btn" exists)
+const copyWebhookBtn = document.getElementById("copy-webhook-btn");
+if (copyWebhookBtn) {
+  copyWebhookBtn.addEventListener("click", () => {
+    navigator.clipboard
+      .writeText(webhookURL)
+      .then(() => {
+        alert("Webhook URL copied to clipboard!");
+      })
+      .catch((err) => {
+        alert("Failed to copy: " + err);
+      });
+  });
+}
 
 // Simulate logging a POST request after a short delay
 setTimeout(() => {

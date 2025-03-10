@@ -23,6 +23,7 @@ app.get("/", (req, res) => {
 app.get("/:id", (req, res) => {
   return res.render("index", {
     wsUri: "ws://" + req.get("host") + req.originalUrl,
+    webhookURL: req.protocol + '://' + req.get('host') + req.originalUrl
   });
 });
 
@@ -35,6 +36,7 @@ app.post("/:id", (req, res) => {
   }
 
   const requestData = {
+    id: crypto.randomUUID(),
     url: req.originalUrl,
     method: req.method,
     headers: req.headers,

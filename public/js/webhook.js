@@ -1,7 +1,7 @@
-const { hostname, pathname, port } = window.location;
+var { hostname, pathname, port } = window.location;
 
 // Construct WebSocket URI
-const wsUri = `ws://${hostname}:${port}${pathname}`;
+const wsUri = `ws://${hostname}${port ? ":" + port : ""}${pathname}`;
 let websocket;
 
 // Initialize WebSocket connection
